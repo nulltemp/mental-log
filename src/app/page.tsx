@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 const moods = [
 	{ label: "とても良い", icon: "😄", value: "very_good" },
@@ -9,23 +11,26 @@ const moods = [
 	{ label: "とても悪い", icon: "😣", value: "very_bad" },
 ];
 
-function getTodayKey() {
-	const today = new Date();
-	return `mood-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+function getMoodKey(date: Date) {
+	return `mood-${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 }
 
 export default function MoodPage() {
-	const [selected, setSelected] = useState(() => {
-		if (typeof window !== "undefined") {
-			return localStorage.getItem(getTodayKey()) || "";
-		}
-		return "";
-	});
+	const [date, setDate] = useState<Date>(new Date());
+	const [selected, setSelected] = useState<string>("");
 	const [saved, setSaved] = useState(false);
+
+	// 日付が変わったらローカルストレージから取得
+	useEffect(() => {
+		if (typeof window !== "undefined") {
+			const mood = localStorage.getItem(getMoodKey(date)) || "";
+			setSelected(mood);
+		}
+	}, [date]);
 
 	const handleClick = (value: string) => {
 		setSelected(value);
-		localStorage.setItem(getTodayKey(), value);
+		localStorage.setItem(getMoodKey(date), value);
 		setSaved(true);
 		setTimeout(() => setSaved(false), 1200);
 	};
@@ -33,8 +38,16 @@ export default function MoodPage() {
 	return (
 		<main className="min-h-screen flex flex-col items-center justify-center bg-[#f5f6fa]">
 			<h1 className="text-2xl font-bold mb-6 text-[#222]">
-				今日の気分を選んでください
+				日付と気分を選んでください
 			</h1>
+			<div className="mb-8 bg-white p-4 rounded-lg shadow">
+				<Calendar
+					locale="ja-JP"
+					value={date}
+					onChange={(d) => setDate(d && !Array.isArray(d) ? d : new Date())}
+					className="react-calendar border-0"
+				/>
+			</div>
 			<div className="flex gap-8 mb-8">
 				{moods.map((mood) => (
 					<button
@@ -52,7 +65,7 @@ export default function MoodPage() {
 			</div>
 			{selected && (
 				<div className="text-base text-[#555] mb-6">
-					選択中:{" "}
+					{date.toLocaleDateString()} の気分:{" "}
 					<b>{moods.find((m) => m.value === selected)?.label}</b>
 				</div>
 			)}
